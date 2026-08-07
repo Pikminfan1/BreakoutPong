@@ -1,12 +1,15 @@
 
 #include "ecs/EntityManager.hpp"
 #include "ecs/ComponentArray.hpp"
+#include "ecs/ComponentManager.hpp"
 #include <iostream>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <cstdio>
 
+struct TestPos { float x; float y; };
+struct TestVel { float dx; float dy; };
 
 void testEntityManager()
 {
@@ -59,7 +62,9 @@ void testEntityManager()
 
     std::cout << "=== End Test ===\n\n";
 }
-struct TestPos { float x; float y; };
+
+
+
 void testComponentArray()
 {
     std::cout << "=== ComponentArray Test ===\n";
@@ -118,11 +123,73 @@ void testComponentArray()
     std::cout << "=== End Test ===\n\n";
 }
 
+void testComponentManager()
+{
+    std::cout << "=== ComponentManager Test ===\n";
+    ComponentManager cm;
+
+    // --- Register two distinct component types ---
+    cm.RegisterComponent<TestPos>();
+    cm.RegisterComponent<TestVel>();
+
+    // --- Test 1: distinct types get distinct sequential IDs (0, 1) ---
+    ComponentType posId = cm.GetComponentType<TestPos>();
+    ComponentType velId = cm.GetComponentType<TestVel>();
+    std::cout << "Pos id = " << (int)posId << ", Vel id = " << (int)velId << "\n";
+    std::cout << ((posId == 0 && velId == 1)
+        ? "[PASS] Distinct sequential component type IDs\n"
+        : "[FAIL] Type IDs wrong\n");
+
+    // --- Test 2: type ID is stable across repeated calls ---
+    std::cout << (cm.GetComponentType<TestPos>() == posId
+        ? "[PASS] Component type ID is stable\n"
+        : "[FAIL] Type ID changed between calls\n");
+
+    // --- Test 3: add + get routes to the correct array ---
+    Entity e = 5;
+    cm.AddComponent<TestPos>(e, TestPos{ 3.0f, 4.0f });
+    cm.AddComponent<TestVel>(e, TestVel{ 1.0f, -1.0f });
+    bool t3 = cm.GetComponent<TestPos>(e).x == 3.0f
+           && cm.GetComponent<TestVel>(e).dx == 1.0f;
+    std::cout << (t3 ? "[PASS] Add/Get route to correct arrays\n"
+                     : "[FAIL] Add/Get routing wrong\n");
+
+    // --- Test 4: components of different types on same entity don't collide ---
+    cm.GetComponent<TestPos>(e).x = 42.0f;         // change Pos
+    bool t4 = cm.GetComponent<TestVel>(e).dx == 1.0f;  // Vel must be untouched
+    std::cout << (t4 ? "[PASS] Different component types are independent\n"
+                     : "[FAIL] Types collided\n");
+
+    // --- Test 5: RemoveComponent removes only that type ---
+    cm.RemoveComponent<TestPos>(e);                // drop Pos only
+    bool t5 = cm.GetComponent<TestVel>(e).dx == 1.0f;  // Vel still there
+    std::cout << (t5 ? "[PASS] RemoveComponent removes only the target type\n"
+                     : "[FAIL] Remove hit the wrong type\n");
+
+    // --- Test 6: EntityDestroyed fan-out clears the entity from ALL arrays ---
+    // Re-add Pos so the entity has BOTH again, then destroy it.
+    cm.AddComponent<TestPos>(e, TestPos{ 9.0f, 9.0f });
+    Entity other = 6;
+    cm.AddComponent<TestPos>(other, TestPos{ 7.0f, 7.0f });  // bystander
+    cm.AddComponent<TestVel>(other, TestVel{ 2.0f, 2.0f });
+
+    cm.EntityDestroyed(e);   // should wipe e from BOTH Pos and Vel arrays
+
+    // The bystander 'other' must be untouched by e's destruction:
+    bool t6 = cm.GetComponent<TestPos>(other).x == 7.0f
+           && cm.GetComponent<TestVel>(other).dx == 2.0f;
+    std::cout << (t6 ? "[PASS] EntityDestroyed fanned out without hitting bystanders\n"
+                     : "[FAIL] EntityDestroyed corrupted other entities\n");
+
+    std::cout << "=== End Test ===\n\n";
+}
 int main(int argc, char *argv[])
 {
     testEntityManager();  // run the EntityManager unit tests
 
     testComponentArray(); // run the ComponentArray unit tests
+    
+    testComponentManager(); // run the ComponentManager unit tests
 
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
