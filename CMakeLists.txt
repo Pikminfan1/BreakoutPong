@@ -17,6 +17,7 @@ FetchContent_MakeAvailable(SDL3)
 # --- Define executable ---
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/ecs/EntityManager.cpp
     # Add more .cpp files as you create them
 )
 
