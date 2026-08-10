@@ -25,7 +25,7 @@ public:
         // Guard: entity must not already have this component.
         assert(sparse[entity] == MAX_ENTITIES && "Component added to same entity more than once.");
 
-        // TODO:
+
         // 1. new element goes at dense index == size
         denseEntities[size] = entity;
         // 2. write component into denseComponents[size]
@@ -42,7 +42,7 @@ public:
         // Guard: entity must currently have this component.
         assert(sparse[entity] != MAX_ENTITIES && "Removing non-existent component.");
 
-        // TODO (swap-and-pop):
+        // (swap-and-pop):
         // 1. removedIndex = sparse[entity]
         // 2. lastIndex    = size - 1
         // 3. copy denseComponents[lastIndex] -> denseComponents[removedIndex]
@@ -67,14 +67,14 @@ public:
     T &GetData(Entity entity)
     {
         assert(sparse[entity] != MAX_ENTITIES && "Retrieving non-existent component.");
-        // TODO: return the component at the dense index sparse[entity] points to
+        // Return the component at the dense index sparse[entity] points to
         return denseComponents[sparse[entity]];
     }
 
     // Called when an entity is destroyed — remove its data if it has any.
     void EntityDestroyed(Entity entity) override
     {
-        // TODO: if this entity has the component (sparse[entity] != MAX_ENTITIES),
+        // if this entity has the component (sparse[entity] != MAX_ENTITIES),
         //       call RemoveData(entity).
         if (sparse[entity] != MAX_ENTITIES)
         {

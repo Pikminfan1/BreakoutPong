@@ -32,7 +32,6 @@ public:
         assert(systems.find(typeName) == systems.end()
                && "Registering system more than once.");
 
-        // TODO:
         // 1. create the system:            auto system = std::make_shared<T>();
         // 2. store it in the map:          systems[typeName] = system;
         // 3. return it:                    return system;
@@ -50,16 +49,14 @@ public:
         assert(systems.find(typeName) != systems.end()
                && "System used before registered.");
 
-        // TODO: store the signature for this system:
-        //       signatures[typeName] = signature;
-
+        // store the signature for this system:
         signatures[typeName] = signature;
     }
 
     // Called when an entity is destroyed: remove it from EVERY system's set.
     void EntityDestroyed(Entity entity)
     {
-        // TODO: loop over every (name -> system) pair in `systems` and
+        //loop over every (name -> system) pair in `systems` and
         //       erase `entity` from that system's mEntities set.
         //       (std::set::erase is a safe no-op if the entity isn't present.)
         for(auto &[name, system] : systems){
@@ -72,7 +69,7 @@ public:
     // to that system's set; if it no longer matches, remove it.
     void EntitySignatureChanged(Entity entity, Signature entitySignature)
     {
-        // TODO: for each (name -> system) pair in `systems`:
+        // for each (name -> system) pair in `systems`:
         //   1. look up that system's required signature:
         //        const Signature &systemSignature = signatures[name];
         //   2. match test: does the entity have ALL the required bits?
