@@ -8,10 +8,87 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <cstdio>
+#include "ecs/Coordinator.hpp"
 
 struct TestPos { float x; float y; };
 struct TestVel { float dx; float dy; };
 
+// --- Test components ---
+struct CPosition { float x; float y; };
+struct CVelocity { float dx; float dy; };
+
+// --- A system that moves entities: needs Position + Velocity ---
+class MoveSystem : public System
+{
+public:
+    // Advance every matching entity's position by its velocity * dt.
+    void Update(Coordinator &coord, float dt)
+    {
+        for (Entity e : mEntities)
+        {
+            auto &pos = coord.GetComponent<CPosition>(e);
+            auto &vel = coord.GetComponent<CVelocity>(e);
+            pos.x += vel.dx * dt;
+            pos.y += vel.dy * dt;
+        }
+    }
+};
+
+void testCoordinatorIntegration()
+{
+    std::cout << "=== Coordinator Integration Test ===\n";
+    Coordinator coord;
+    coord.Init();
+
+    // Register components and the system
+    coord.RegisterComponent<CPosition>();
+    coord.RegisterComponent<CVelocity>();
+    auto moveSystem = coord.RegisterSystem<MoveSystem>();
+
+    // MoveSystem requires Position AND Velocity — build that signature
+    Signature sig;
+    sig.set(coord.GetComponentType<CPosition>());
+    sig.set(coord.GetComponentType<CVelocity>());
+    coord.SetSystemSignature<MoveSystem>(sig);
+
+    // --- Test 1: entity with both components auto-joins the system ---
+    Entity e = coord.CreateEntity();
+    coord.AddComponent<CPosition>(e, CPosition{ 0.0f, 0.0f });
+    coord.AddComponent<CVelocity>(e, CVelocity{ 10.0f, 5.0f });
+    std::cout << (moveSystem->mEntities.count(e) == 1
+        ? "[PASS] Entity auto-joined system after AddComponent\n"
+        : "[FAIL] Entity did not join system\n");
+
+    // --- Test 2: running the system mutates the component data ---
+    moveSystem->Update(coord, 1.0f);   // dt = 1.0 for easy math
+    auto &p = coord.GetComponent<CPosition>(e);
+    std::cout << (p.x == 10.0f && p.y == 5.0f
+        ? "[PASS] System moved entity (0,0)->(10,5)\n"
+        : "[FAIL] System did not update position correctly\n");
+
+    // --- Test 3: an entity with only Position does NOT join ---
+    Entity e2 = coord.CreateEntity();
+    coord.AddComponent<CPosition>(e2, CPosition{ 1.0f, 1.0f });
+    std::cout << (moveSystem->mEntities.count(e2) == 0
+        ? "[PASS] Partial entity correctly excluded from system\n"
+        : "[FAIL] Partial entity wrongly joined\n");
+
+    // --- Test 4: removing a required component drops it from the system ---
+    coord.RemoveComponent<CVelocity>(e);
+    std::cout << (moveSystem->mEntities.count(e) == 0
+        ? "[PASS] Entity left system after losing required component\n"
+        : "[FAIL] Entity still in system after RemoveComponent\n");
+
+    // --- Test 5: destroying an entity removes it everywhere ---
+    coord.AddComponent<CVelocity>(e, CVelocity{ 1.0f, 1.0f });  // rejoin first
+    bool rejoined = moveSystem->mEntities.count(e) == 1;
+    coord.DestroyEntity(e);
+    std::cout << ((rejoined && moveSystem->mEntities.count(e) == 0)
+        ? "[PASS] DestroyEntity removed entity from system\n"
+        : "[FAIL] Destroyed entity lingered\n");
+
+    std::cout << "=== End Test ===\n\n";
+}
 
 // A minimal concrete system for testing — just inherits the entity set.
 class TestMovementSystem : public System
@@ -257,7 +334,9 @@ int main(int argc, char *argv[])
     
     testComponentManager(); // run the ComponentManager unit tests
 
-    testSystemManager();
+    testSystemManager(); // run the SystemManager unit tests
+
+    testCoordinatorIntegration();  // run the Coordinator integration test
 
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
