@@ -3,6 +3,7 @@
 #include "ecs/ComponentArray.hpp"
 #include "ecs/ComponentManager.hpp"
 #include <iostream>
+#include "ecs/SystemManager.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -10,6 +11,71 @@
 
 struct TestPos { float x; float y; };
 struct TestVel { float dx; float dy; };
+
+
+// A minimal concrete system for testing — just inherits the entity set.
+class TestMovementSystem : public System
+{
+public:
+    // In a real system this would move entities; for the test we just
+    // expose how many entities are currently assigned to us.
+    size_t Count() const { return mEntities.size(); }
+};
+
+void testSystemManager()
+{
+    std::cout << "=== SystemManager Test ===\n";
+    SystemManager sm;
+
+    auto sys = sm.RegisterSystem<TestMovementSystem>();
+
+    // Require components at bit positions 0 AND 1 (pretend Position + Velocity)
+    Signature required;
+    required.set(0);
+    required.set(1);
+    sm.SetSignature<TestMovementSystem>(required);
+
+    // --- Test 1: entity with BOTH bits matches and joins the system ---
+    Signature both;
+    both.set(0); both.set(1);
+    sm.EntitySignatureChanged(1, both);
+    std::cout << (sys->Count() == 1
+        ? "[PASS] Entity with all required bits joined\n"
+        : "[FAIL] Matching entity not added\n");
+
+    // --- Test 2: entity with only ONE required bit does NOT match ---
+    Signature onlyOne;
+    onlyOne.set(0);   // missing bit 1
+    sm.EntitySignatureChanged(2, onlyOne);
+    std::cout << (sys->Count() == 1
+        ? "[PASS] Entity missing a required bit was excluded\n"
+        : "[FAIL] Non-matching entity incorrectly added\n");
+
+    // --- Test 3: entity with required bits PLUS extras still matches ---
+    Signature superset;
+    superset.set(0); superset.set(1); superset.set(5);  // extra bit 5
+    sm.EntitySignatureChanged(3, superset);
+    std::cout << (sys->Count() == 2
+        ? "[PASS] Entity with extra components still matches\n"
+        : "[FAIL] Superset entity not matched\n");
+
+    // --- Test 4: an entity that STOPS matching gets removed ---
+    // Entity 1 currently matches; change its signature to drop bit 1.
+    Signature dropped;
+    dropped.set(0);   // lost bit 1
+    sm.EntitySignatureChanged(1, dropped);
+    std::cout << (sys->Count() == 1
+        ? "[PASS] Entity that lost a required component was removed\n"
+        : "[FAIL] Entity not removed after signature change\n");
+
+    // --- Test 5: EntityDestroyed removes from the system ---
+    sm.EntityDestroyed(3);   // entity 3 was matching
+    std::cout << (sys->Count() == 0
+        ? "[PASS] EntityDestroyed removed entity from system\n"
+        : "[FAIL] Destroyed entity still in system\n");
+
+    std::cout << "=== End Test ===\n\n";
+}
 
 void testEntityManager()
 {
@@ -190,6 +256,8 @@ int main(int argc, char *argv[])
     testComponentArray(); // run the ComponentArray unit tests
     
     testComponentManager(); // run the ComponentManager unit tests
+
+    testSystemManager();
 
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
