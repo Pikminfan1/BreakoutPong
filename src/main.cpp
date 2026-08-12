@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
     world.RegisterComponent<Velocity>();
     world.RegisterComponent<Renderable>();
     world.RegisterComponent<PlayerControlled>();
+    world.RegisterComponent<PreviousPosition>();
 
     auto movementSystem = world.RegisterSystem<MovementSystem>();
     {
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
         Signature sig;
         sig.set(world.GetComponentType<Position>());
         sig.set(world.GetComponentType<Renderable>());
+        sig.set(world.GetComponentType<PreviousPosition>());
         world.SetSystemSignature<RenderSystem>(sig);
     }
 
@@ -86,6 +88,7 @@ int main(int argc, char *argv[])
 
     auto entity = world.CreateEntity();
     world.AddComponent(entity, Position{100.0f, 100.0f});
+    world.AddComponent(entity, PreviousPosition{100.0f, 100.0f});
     world.AddComponent(entity, Velocity{0.0f, 0.0f});
     world.AddComponent(entity, Renderable{50.0f, 50.0f, 255, 255, 0, 255});
     world.AddComponent(entity, PlayerControlled{});
@@ -135,9 +138,8 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
         SDL_RenderClear(renderer);
 
-
-        
-        renderSystem->Update(world, renderer);
+        float alpha = accumulator / FIXED_DT; // [0,1] fraction of leftover time
+        renderSystem->Update(world, renderer,alpha);
     
 
         // renderSystem(world, renderer);

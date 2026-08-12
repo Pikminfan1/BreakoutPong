@@ -12,7 +12,12 @@ public:
         for (Entity entity : mEntities)
         {
             auto& entityPos = coord.GetComponent<Position>(entity);
+            auto& entityPrevPos = coord.GetComponent<PreviousPosition>(entity);
             const auto& entityVel = coord.GetComponent<Velocity>(entity);
+
+            //Store the previous position before updating
+            entityPrevPos.x = entityPos.x;
+            entityPrevPos.y = entityPos.y;
 
             entityPos.x += entityVel.dx * dt;
             entityPos.y += entityVel.dy * dt;
