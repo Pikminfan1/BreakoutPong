@@ -14,7 +14,7 @@ public:
         for (Entity entity : mEntities)
         {
 
-            //Controlls For Paddle Movement
+            //Controls For Paddle Movement
             auto& entityVel = coord.GetComponent<Velocity>(entity);
             if(currentKeyState[SDL_SCANCODE_LEFT])
             {

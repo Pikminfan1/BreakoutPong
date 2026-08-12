@@ -13,6 +13,8 @@
 #include "ecs/Coordinator.hpp"
 #include "ecs/Components.hpp"
 #include "ecs/systems/InputSystem.hpp"
+#include "ecs/systems/ScreenClampSystem.hpp"
+#include "ecs/systems/BounceSystem.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -60,6 +62,7 @@ int main(int argc, char *argv[])
     world.RegisterComponent<Renderable>();
     world.RegisterComponent<PlayerControlled>();
     world.RegisterComponent<PreviousPosition>();
+    world.RegisterComponent<Ball>();
 
     auto movementSystem = world.RegisterSystem<MovementSystem>();
     {
@@ -86,13 +89,38 @@ int main(int argc, char *argv[])
         sig.set(world.GetComponentType<PlayerControlled>());
         world.SetSystemSignature<InputSystem>(sig);
     }
+    auto screenClampSystem = world.RegisterSystem<ScreenClampSystem>();
+    {
+        Signature sig;
+        sig.set(world.GetComponentType<Position>());
+        sig.set(world.GetComponentType<Renderable>());
+        world.SetSystemSignature<ScreenClampSystem>(sig);
+    }
+    auto bounceSystem = world.RegisterSystem<BounceSystem>();
+    {
+        Signature sig;
+        sig.set(world.GetComponentType<Position>());
+        sig.set(world.GetComponentType<Velocity>());
+        sig.set(world.GetComponentType<Renderable>());
+        world.SetSystemSignature<BounceSystem>(sig);
+    }
 
+    //Player Paddle Entity
     auto entity = world.CreateEntity();
-    world.AddComponent(entity, Position{100.0f, 100.0f});
+    world.AddComponent(entity, Position{100.0f, 500.0f});
     world.AddComponent(entity, PreviousPosition{100.0f, 100.0f});
     world.AddComponent(entity, Velocity{0.0f, 0.0f});
     world.AddComponent(entity, Renderable{50.0f, 50.0f, 255, 255, 0, 255});
     world.AddComponent(entity, PlayerControlled{});
+
+    //Ball Entity
+    auto ballEntity = world.CreateEntity();
+    world.AddComponent(ballEntity, Position{200.0f, 200.0f});
+    world.AddComponent(ballEntity, PreviousPosition{200.0f, 200.0f});
+    world.AddComponent(ballEntity, Velocity{150.0f, 150.0f});
+    world.AddComponent(ballEntity, Renderable{20.0f, 20.0f, 255, 0, 0, 255});
+    world.AddComponent(ballEntity, Ball{});
+
 
     bool running = true;
     while (running)
@@ -129,9 +157,12 @@ int main(int argc, char *argv[])
         // --- physics: consume time in exact FIXED_DT chunks ---
         while (accumulator >= FIXED_DT)
         {
-            inputSystem->Update(world);   
+            inputSystem->Update(world);
             // updateSystems(world, FIXED_DT);   // placeholder — your ECS later
             movementSystem->Update(world, FIXED_DT);
+            bounceSystem->Update(world, 800.0f, 600.0f); // bounce before clamping
+            screenClampSystem->Update(world, 800.0f, 600.0f); // clamp after moving
+
             accumulator -= FIXED_DT;
         }
 
@@ -140,8 +171,7 @@ int main(int argc, char *argv[])
         SDL_RenderClear(renderer);
 
         double alpha = accumulator / FIXED_DT; // [0,1] fraction of leftover time
-        renderSystem->Update(world, renderer,alpha);
-    
+        renderSystem->Update(world, renderer, alpha);
 
         // renderSystem(world, renderer);
         // (draw things here later)

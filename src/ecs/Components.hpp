@@ -20,3 +20,5 @@ struct Renderable {
 };
 
 struct PlayerControlled {};   // empty tag — marks the input-driven entity
+
+struct Ball {};               // empty tag — marks the ball entity
