@@ -12,6 +12,7 @@
 #include <cstdio>
 #include "ecs/Coordinator.hpp"
 #include "ecs/Components.hpp"
+#include "ecs/systems/InputSystem.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
     world.RegisterComponent<Position>();
     world.RegisterComponent<Velocity>();
     world.RegisterComponent<Renderable>();
+    world.RegisterComponent<PlayerControlled>();
 
     auto movementSystem = world.RegisterSystem<MovementSystem>();
     {
@@ -74,10 +76,19 @@ int main(int argc, char *argv[])
         world.SetSystemSignature<RenderSystem>(sig);
     }
 
+    auto inputSystem = world.RegisterSystem<InputSystem>();
+    {
+        Signature sig;
+        sig.set(world.GetComponentType<Velocity>());
+        sig.set(world.GetComponentType<PlayerControlled>());
+        world.SetSystemSignature<InputSystem>(sig);
+    }
+
     auto entity = world.CreateEntity();
     world.AddComponent(entity, Position{100.0f, 100.0f});
-    world.AddComponent(entity, Velocity{50.0f, 30.0f});
+    world.AddComponent(entity, Velocity{0.0f, 0.0f});
     world.AddComponent(entity, Renderable{50.0f, 50.0f, 255, 255, 0, 255});
+    world.AddComponent(entity, PlayerControlled{});
 
     bool running = true;
     while (running)
@@ -114,6 +125,7 @@ int main(int argc, char *argv[])
         // --- physics: consume time in exact FIXED_DT chunks ---
         while (accumulator >= FIXED_DT)
         {
+            inputSystem->Update(world, FIXED_DT);   
             // updateSystems(world, FIXED_DT);   // placeholder — your ECS later
             movementSystem->Update(world, FIXED_DT);
             accumulator -= FIXED_DT;
@@ -123,7 +135,10 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
         SDL_RenderClear(renderer);
 
+
+        
         renderSystem->Update(world, renderer);
+    
 
         // renderSystem(world, renderer);
         // (draw things here later)

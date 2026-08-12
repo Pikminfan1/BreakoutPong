@@ -14,3 +14,5 @@ struct Renderable {
     float w, h;
     uint8_t r, g, b, a;
 };
+
+struct PlayerControlled {};   // empty tag — marks the input-driven entity
