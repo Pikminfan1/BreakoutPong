@@ -8,7 +8,7 @@
 class RenderSystem : public System
 {
 public:
-    void Update(Coordinator &coord, SDL_Renderer *renderer,float alpha)
+    void Update(Coordinator &coord, SDL_Renderer *renderer,double alpha)
     {
         for (Entity entity : mEntities)
         {

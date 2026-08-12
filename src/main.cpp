@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
     {
         Signature sig;
         sig.set(world.GetComponentType<Position>());
+        sig.set(world.GetComponentType<PreviousPosition>());
         sig.set(world.GetComponentType<Velocity>());
         world.SetSystemSignature<MovementSystem>(sig);
     }
@@ -128,7 +129,7 @@ int main(int argc, char *argv[])
         // --- physics: consume time in exact FIXED_DT chunks ---
         while (accumulator >= FIXED_DT)
         {
-            inputSystem->Update(world, FIXED_DT);   
+            inputSystem->Update(world);   
             // updateSystems(world, FIXED_DT);   // placeholder — your ECS later
             movementSystem->Update(world, FIXED_DT);
             accumulator -= FIXED_DT;
@@ -138,7 +139,7 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
         SDL_RenderClear(renderer);
 
-        float alpha = accumulator / FIXED_DT; // [0,1] fraction of leftover time
+        double alpha = accumulator / FIXED_DT; // [0,1] fraction of leftover time
         renderSystem->Update(world, renderer,alpha);
     
 

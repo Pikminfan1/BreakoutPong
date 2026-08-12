@@ -8,7 +8,7 @@
 class InputSystem : public System
 {
 public:
-    void Update(Coordinator &coord, double dt)
+    void Update(Coordinator &coord)
     {
         const bool *currentKeyState = SDL_GetKeyboardState(nullptr);
         for (Entity entity : mEntities)
