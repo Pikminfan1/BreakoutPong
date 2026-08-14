@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
     world.RegisterComponent<PlayerControlled>();
     world.RegisterComponent<PreviousPosition>();
     world.RegisterComponent<Ball>();
+    world.RegisterComponent<Brick>();
     world.RegisterComponent<Collider>();
 
     auto movementSystem = world.RegisterSystem<MovementSystem>();
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
     // Player Paddle Entity
     auto entity = world.CreateEntity();
     world.AddComponent(entity, Position{100.0f, 500.0f});
-    world.AddComponent(entity, PreviousPosition{100.0f, 100.0f});
+    world.AddComponent(entity, PreviousPosition{100.0f, 500.0f});
     world.AddComponent(entity, Velocity{0.0f, 0.0f});
     world.AddComponent(entity, Renderable{50.0f, 50.0f, 255, 255, 0, 255});
     world.AddComponent(entity, PlayerControlled{});
@@ -131,6 +132,30 @@ int main(int argc, char *argv[])
     world.AddComponent(ballEntity, Renderable{20.0f, 20.0f, 255, 0, 0, 255});
     world.AddComponent(ballEntity, Ball{});
     world.AddComponent(ballEntity, Collider{20.0f, 20.0f, 0.0f, 0.0f});
+
+    const int brickRows = 5;
+    const int brickCols = 10;
+    const float brickWidth = 70.0f;
+    const float brickHeight = 25.0f;
+    const float brickGap = 5.0f; // space between bricks
+    const float startX = 15.0f;  // left margin
+    const float startY = 50.0f;  // top margin
+
+    for (int row = 0; row < brickRows; ++row)
+    {
+        for (int col = 0; col < brickCols; ++col)
+        {
+            float x = startX + col * (brickWidth + brickGap);
+            float y = startY + row * (brickHeight + brickGap);
+
+            auto brick = world.CreateEntity();
+            world.AddComponent(brick, Position{x, y});
+            world.AddComponent(brick, PreviousPosition{x, y});
+            world.AddComponent(brick, Renderable{brickWidth, brickHeight, /* r,g,b,a */ 100, 200, 100, 255});
+            world.AddComponent(brick, Collider{brickWidth, brickHeight, 0.0f, 0.0f});
+            world.AddComponent(brick, Brick{});
+        }
+    }
 
     bool running = true;
     while (running)
@@ -172,7 +197,7 @@ int main(int argc, char *argv[])
             movementSystem->Update(world, FIXED_DT);
             bounceSystem->Update(world, 800.0f, 600.0f);      // bounce before clamping
             screenClampSystem->Update(world, 800.0f, 600.0f); // clamp after moving
-            collisionSystem->Update(world);              
+            collisionSystem->Update(world);
 
             accumulator -= FIXED_DT;
         }
