@@ -14,9 +14,9 @@ class Coordinator
 public:
     void Init()
     {
-        entityManager    = std::make_unique<EntityManager>();
+        entityManager = std::make_unique<EntityManager>();
         componentManager = std::make_unique<ComponentManager>();
-        systemManager    = std::make_unique<SystemManager>();
+        systemManager = std::make_unique<SystemManager>();
     }
 
     // ---------- Entity ----------
@@ -35,6 +35,10 @@ public:
         entityManager->DestroyEntity(entity);
         componentManager->EntityDestroyed(entity);
         systemManager->EntityDestroyed(entity);
+    }
+    Signature GetEntitySignature(Entity entity)
+    {
+        return entityManager->GetSignature(entity);
     }
 
     // ---------- Component ----------
@@ -87,6 +91,13 @@ public:
     }
 
     template <typename T>
+    bool HasComponent(Entity entity)
+    {
+        Signature signature = entityManager->GetSignature(entity);
+        return signature.test(componentManager->GetComponentType<T>());
+    }
+
+    template <typename T>
     ComponentType GetComponentType()
     {
         return componentManager->GetComponentType<T>();
@@ -107,7 +118,7 @@ public:
     }
 
 private:
-    std::unique_ptr<EntityManager>    entityManager;
+    std::unique_ptr<EntityManager> entityManager;
     std::unique_ptr<ComponentManager> componentManager;
-    std::unique_ptr<SystemManager>    systemManager;
+    std::unique_ptr<SystemManager> systemManager;
 };

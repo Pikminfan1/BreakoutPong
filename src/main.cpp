@@ -5,6 +5,7 @@
 #include <iostream>
 #include "ecs/systems/MovementSystem.hpp"
 #include "ecs/systems/RenderSystem.hpp"
+#include "ecs/systems/CollisionSystem.hpp"
 #include "ecs/SystemManager.hpp"
 
 #include <SDL3/SDL.h>
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
     world.RegisterComponent<PlayerControlled>();
     world.RegisterComponent<PreviousPosition>();
     world.RegisterComponent<Ball>();
+    world.RegisterComponent<Collider>();
 
     auto movementSystem = world.RegisterSystem<MovementSystem>();
     {
@@ -104,23 +106,31 @@ int main(int argc, char *argv[])
         sig.set(world.GetComponentType<Renderable>());
         world.SetSystemSignature<BounceSystem>(sig);
     }
+    auto collisionSystem = world.RegisterSystem<CollisionSystem>();
+    {
+        Signature sig;
+        sig.set(world.GetComponentType<Position>());
+        sig.set(world.GetComponentType<Collider>());
+        world.SetSystemSignature<CollisionSystem>(sig);
+    }
 
-    //Player Paddle Entity
+    // Player Paddle Entity
     auto entity = world.CreateEntity();
     world.AddComponent(entity, Position{100.0f, 500.0f});
     world.AddComponent(entity, PreviousPosition{100.0f, 100.0f});
     world.AddComponent(entity, Velocity{0.0f, 0.0f});
     world.AddComponent(entity, Renderable{50.0f, 50.0f, 255, 255, 0, 255});
     world.AddComponent(entity, PlayerControlled{});
+    world.AddComponent(entity, Collider{50.0f, 50.0f, 0.0f, 0.0f});
 
-    //Ball Entity
+    // Ball Entity
     auto ballEntity = world.CreateEntity();
     world.AddComponent(ballEntity, Position{200.0f, 200.0f});
     world.AddComponent(ballEntity, PreviousPosition{200.0f, 200.0f});
     world.AddComponent(ballEntity, Velocity{150.0f, 150.0f});
     world.AddComponent(ballEntity, Renderable{20.0f, 20.0f, 255, 0, 0, 255});
     world.AddComponent(ballEntity, Ball{});
-
+    world.AddComponent(ballEntity, Collider{20.0f, 20.0f, 0.0f, 0.0f});
 
     bool running = true;
     while (running)
@@ -160,8 +170,9 @@ int main(int argc, char *argv[])
             inputSystem->Update(world);
             // updateSystems(world, FIXED_DT);   // placeholder — your ECS later
             movementSystem->Update(world, FIXED_DT);
-            bounceSystem->Update(world, 800.0f, 600.0f); // bounce before clamping
+            bounceSystem->Update(world, 800.0f, 600.0f);      // bounce before clamping
             screenClampSystem->Update(world, 800.0f, 600.0f); // clamp after moving
+            collisionSystem->Update(world);              
 
             accumulator -= FIXED_DT;
         }

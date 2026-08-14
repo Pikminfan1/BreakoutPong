@@ -22,3 +22,8 @@ struct Renderable {
 struct PlayerControlled {};   // empty tag — marks the input-driven entity
 
 struct Ball {};               // empty tag — marks the ball entity
+
+struct Collider {
+    float w, h;              // collision box size (independent of Renderable)
+    float offsetX, offsetY;  // offset from Position's top-left (usually 0,0)
+};
