@@ -33,7 +33,8 @@ struct Ball
 
 struct Brick
 {
-}; // empty tag — marks the brick entity
+    int scoreValue = 10; // default score value for a brick
+}; 
 
 struct Collider
 {

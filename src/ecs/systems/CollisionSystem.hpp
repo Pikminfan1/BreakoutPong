@@ -10,7 +10,7 @@
 class CollisionSystem : public System
 {
 public:
-    void Update(Coordinator &coord)
+    void Update(Coordinator &coord, int &scoreDelta)
     {
         // Entities marked for destruction during this pass. We CANNOT destroy
         // entities while iterating mEntities (structural change mid-loop is
@@ -84,6 +84,7 @@ public:
 
                 if (coord.HasComponent<Brick>(other))
                 {
+                    scoreDelta += coord.GetComponent<Brick>(other).scoreValue;
                     toDestroy.push_back(other);
                 }
                 

@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         Signature sig;
         sig.set(world.GetComponentType<Position>());
         sig.set(world.GetComponentType<Renderable>());
-        sig.set(world.GetComponentType<PlayerControlled>());   // ← add this
+        sig.set(world.GetComponentType<PlayerControlled>()); // ← add this
         world.SetSystemSignature<ScreenClampSystem>(sig);
     }
     auto bounceSystem = world.RegisterSystem<BounceSystem>();
@@ -200,12 +200,15 @@ int main(int argc, char *argv[])
             movementSystem->Update(world, FIXED_DT);
             bounceSystem->Update(world, 800.0f, 600.0f);      // bounce before clamping
             screenClampSystem->Update(world, 800.0f, 600.0f); // clamp after moving
-            collisionSystem->Update(world);
 
-            accumulator -= FIXED_DT;
+            
 
-            //print current lives remaining and score to console
+            int scoreDelta = 0;
+            collisionSystem->Update(world, scoreDelta);
+            gameState.AddScore(scoreDelta);
+            // print current lives remaining and score to console
             printf("Lives: %d, Score: %.2f\n", gameState.GetLives(), gameState.GetScore());
+            accumulator -= FIXED_DT;
         }
 
         auto &ballPos = world.GetComponent<Position>(ballEntity);
