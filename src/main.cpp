@@ -1,4 +1,3 @@
-
 #include "ecs/EntityManager.hpp"
 #include "ecs/ComponentArray.hpp"
 #include "ecs/ComponentManager.hpp"
@@ -7,6 +6,7 @@
 #include "ecs/systems/RenderSystem.hpp"
 #include "ecs/systems/CollisionSystem.hpp"
 #include "ecs/SystemManager.hpp"
+#include "game/GameStateManager.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
         Signature sig;
         sig.set(world.GetComponentType<Position>());
         sig.set(world.GetComponentType<Renderable>());
+        sig.set(world.GetComponentType<PlayerControlled>());   // ← add this
         world.SetSystemSignature<ScreenClampSystem>(sig);
     }
     auto bounceSystem = world.RegisterSystem<BounceSystem>();
@@ -140,6 +141,8 @@ int main(int argc, char *argv[])
     const float brickGap = 5.0f; // space between bricks
     const float startX = 15.0f;  // left margin
     const float startY = 50.0f;  // top margin
+
+    GameStateManager gameState;
 
     for (int row = 0; row < brickRows; ++row)
     {
@@ -200,6 +203,24 @@ int main(int argc, char *argv[])
             collisionSystem->Update(world);
 
             accumulator -= FIXED_DT;
+
+            //print current lives remaining and score to console
+            printf("Lives: %d, Score: %.2f\n", gameState.GetLives(), gameState.GetScore());
+        }
+
+        auto &ballPos = world.GetComponent<Position>(ballEntity);
+        if (ballPos.y > 600.0f)
+        {
+            gameState.LoseLife();
+            world.GetComponent<Position>(ballEntity) = Position{400.0f, 300.0f};
+            world.GetComponent<PreviousPosition>(ballEntity) = PreviousPosition{400.0f, 300.0f};
+            world.GetComponent<Velocity>(ballEntity) = Velocity{150.0f, -150.0f};
+        }
+
+        if (gameState.GetLives() <= 0)
+        {
+            running = false;
+            printf("Game Over! Final Score: %.2f\n", gameState.GetScore());
         }
 
         // --- render: clear → present ---
