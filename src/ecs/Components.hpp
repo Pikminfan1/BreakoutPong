@@ -2,30 +2,41 @@
 
 #include <cstdint>
 
-struct Position {
+struct Position
+{
     float x, y;
 };
 
-struct PreviousPosition {
+struct PreviousPosition
+{
     float x, y;
 };
 
-struct Velocity {
+struct Velocity
+{
     float dx, dy;
 };
 
-struct Renderable {
+struct Renderable
+{
     float w, h;
     uint8_t r, g, b, a;
 };
 
-struct PlayerControlled {};   // empty tag — marks the input-driven entity
+struct PlayerControlled
+{
+}; // empty tag — marks the input-driven entity
 
-struct Ball {};               // empty tag — marks the ball entity
+struct Ball
+{
+}; // empty tag — marks the ball entity
 
-struct Brick {}; // empty tag — marks the brick entity
+struct Brick
+{
+}; // empty tag — marks the brick entity
 
-struct Collider {
-    float w, h;              // collision box size (independent of Renderable)
-    float offsetX, offsetY;  // offset from Position's top-left (usually 0,0)
+struct Collider
+{
+    float w, h;             // collision box size (independent of Renderable)
+    float offsetX, offsetY; // offset from Position's top-left (usually 0,0)
 };
